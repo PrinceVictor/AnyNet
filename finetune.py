@@ -1,5 +1,6 @@
 import argparse
 import os
+import PIL.Image as Image
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -26,7 +27,7 @@ parser.add_argument('--epochs', type=int, default=300,
                     help='number of epochs to train')
 parser.add_argument('--train_bsize', type=int, default=6,
                     help='batch size for training (default: 6)')
-parser.add_argument('--test_bsize', type=int, default=8,
+parser.add_argument('--test_bsize', type=int, default=2,
                     help='batch size for testing (default: 8)')
 parser.add_argument('--save_path', type=str, default='results/finetune_anynet',
                     help='the path of saving checkpoints and log')
@@ -191,16 +192,29 @@ def test(dataloader, model, log):
         imgR = imgR.float().cuda()
         disp_L = disp_L.float().cuda()
 
+        start_time = time.time()
         with torch.no_grad():
             outputs = model(imgL, imgR)
+
+            inference_time = time.time() -start_time
             for x in range(stages):
                 output = torch.squeeze(outputs[x], 1)
                 D1s[x].update(error_estimating(output, disp_L).item())
 
+        output = outputs[3].squeeze().cpu()
+        disparity = output.numpy()
+        disparity = (disparity).astype('uint8')
+        disparity = Image.fromarray(disparity)
+        # disparity.show()
+        disparity.save('results/disp'+ str(batch_idx) +'.png')
+
+        # log.info('stage4 size {}' .format(output.shape))
         info_str = '\t'.join(['Stage {} = {:.4f}({:.4f})'.format(x, D1s[x].val, D1s[x].avg) for x in range(stages)])
 
-        log.info('[{}/{}] {}'.format(
-            batch_idx, length_loader, info_str))
+        log.info('[{}/{}] {} \tinference {:.3f}ms FPS {}'.format(
+            batch_idx, length_loader, info_str, inference_time, round(1.0/inference_time)))
+
+        break
 
     info_str = ', '.join(['Stage {}={:.4f}'.format(x, D1s[x].avg) for x in range(stages)])
     log.info('Average test 3-Pixel Error = ' + info_str)
