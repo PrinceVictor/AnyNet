@@ -80,6 +80,7 @@ def main():
     for key, value in sorted(vars(args).items()):
         log.info(str(key) + ': ' + str(value))
 
+    print('args spn {}'.format(args.with_spn))
     model = models.anynet.AnyNet(args)
     model = nn.DataParallel(model).cuda()
     optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999))

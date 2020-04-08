@@ -50,6 +50,8 @@ if args.cuda == True:
 else:
     device = torch.device("cpu")
 
+print('args spn {}'.format(args.with_spn))
+
 model = models.anynet.AnyNet(args)
 model = nn.DataParallel(model).cuda()
 
@@ -59,15 +61,16 @@ if args.loadmodel is not None:
     model.load_state_dict(state_dict['state_dict'], strict=False)
 
 if __name__ == '__main__':
+
     process = preprocess.get_transform(augment=False)
 
     left_images_dir = '/home/victor/dataset/data_scene_flow/testing/image_2'
     right_images_dir = '/home/victor/dataset/data_scene_flow/testing/image_3'
     if os.path.isdir(left_images_dir):
         left_image_paths = glob.glob(os.path.join(left_images_dir, '*.png'))
-        print('left images num: ', len(left_images_dir))
+        print('left images num: ', len(left_image_paths))
         right_image_paths = glob.glob(os.path.join(right_images_dir, '*.png'))
-        print('right images num: ', len(right_images_dir))
+        print('right images num: ', len(left_image_paths))
         # if len(image_paths)==0:
         #     print("non image input!!!!")
         #     break
@@ -77,36 +80,33 @@ if __name__ == '__main__':
 
     model.eval()
 
-    for i in range(1):
-        
+    for i in range(len(left_image_paths)):
 
-    # for i in range(len(left_image_paths)):
-    #
-    #     imgL = Image.open(left_image_paths[i])
-    #     imgR = Image.open(right_image_paths[i])
-    #
-    #     w, h = imgL.size
-    #
-    #     imgL = imgL.crop((w - 1232, h - 368, w, h))
-    #     imgR = imgR.crop((w - 1232, h - 368, w, h))
-    #
-    #     imgL = process(imgL).unsqueeze(0)
-    #     imgR = process(imgR).unsqueeze(0)
-    #     imgL = imgL.contiguous()
-    #     imgR = imgR.contiguous()
-    #
-    #     start_time = time.time()
-    #     with torch.no_grad():
-    #         outputs = model(imgL, imgR)
-    #     inference_time = time.time() - start_time
-    #     print('inference time {:.3f}ms FPS {}'.format(inference_time*1000, round(1/inference_time)))
-    #     print(len(outputs))
+        imgL = Image.open(left_image_paths[i])
+        imgR = Image.open(right_image_paths[i])
 
-        # output = outputs[3].squeeze().cpu()
-        # disparity = output.numpy()
-        # disparity = (disparity).astype('uint8')
-        # disparity = Image.fromarray(disparity)
-        # disparity.save('results/'+ left_image_paths[-13:])
+        w, h = imgL.size
+
+        imgL = imgL.crop((w - 1232, h - 368, w, h))
+        imgR = imgR.crop((w - 1232, h - 368, w, h))
+
+        imgL = process(imgL).unsqueeze(0)
+        imgR = process(imgR).unsqueeze(0)
+        imgL = imgL.contiguous()
+        imgR = imgR.contiguous()
+
+        start_time = time.time()
+        with torch.no_grad():
+            outputs = model(imgL, imgR)
+        inference_time = time.time() - start_time
+        print('i:{} inference time {:.3f}ms FPS {}'.format(i, inference_time*1000, round(1/inference_time)))
+        # print(len(outputs))
+
+        output = outputs[3].squeeze().cpu()
+        disparity = output.numpy()
+        disparity = (disparity).astype('uint8')
+        disparity = Image.fromarray(disparity)
+        disparity.save('results/' + left_image_paths[i][-13:])
 
 
 
