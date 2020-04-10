@@ -55,10 +55,10 @@ print('args spn {}'.format(args.with_spn))
 model = models.anynet.AnyNet(args)
 model = nn.DataParallel(model).cuda()
 
-if args.loadmodel is not None:
-    print('load AnyNet')
-    state_dict = torch.load(args.loadmodel)
-    model.load_state_dict(state_dict['state_dict'], strict=False)
+# if args.loadmodel is not None:
+#     print('load AnyNet')
+#     state_dict = torch.load(args.loadmodel)
+#     model.load_state_dict(state_dict['state_dict'], strict=False)
 
 if __name__ == '__main__':
 
@@ -79,6 +79,7 @@ if __name__ == '__main__':
         right_image_paths = [right_images_dir]
 
     model.eval()
+    print(model)
 
     for i in range(len(left_image_paths)):
 
@@ -103,10 +104,12 @@ if __name__ == '__main__':
         # print(len(outputs))
 
         output = outputs[3].squeeze().cpu()
-        disparity = output.numpy()
-        disparity = (disparity).astype('uint8')
-        disparity = Image.fromarray(disparity)
-        disparity.save('results/' + left_image_paths[i][-13:])
+
+        break
+        # disparity = output.numpy()
+        # disparity = (disparity).astype('uint8')
+        # disparity = Image.fromarray(disparity)
+        # disparity.save('results/' + left_image_paths[i][-13:])
 
 
 

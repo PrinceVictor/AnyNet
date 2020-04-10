@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import math
 from .submodules import post_3dconvs,feature_extraction_conv
 import sys
+from .cspn import Affinity_Propagate
 
 
 class AnyNet(nn.Module):
@@ -29,7 +30,11 @@ class AnyNet(nn.Module):
             except:
                 print('Cannot load spn model')
                 sys.exit()
-            self.spn_layer = GateRecurrent2dnoind(True,False)
+            # self.spn_layer = GateRecurrent2dnoind(True,False)
+            cspn_config_default = {'step': 24, 'kernel': 3, 'norm_type': '8sum'}
+            self.cspn_layer = Affinity_Propagate(cspn_config_default['step'],
+                                                 cspn_config_default['kernel'],
+                                                 norm_type=cspn_config_default['norm_type'])
             spnC = self.spn_init_channels
             self.refine_spn = [nn.Sequential(
                 nn.Conv2d(3, spnC*2, 3, 1, 1, bias=False),
@@ -38,7 +43,10 @@ class AnyNet(nn.Module):
                 nn.ReLU(inplace=True),
                 nn.Conv2d(spnC*2, spnC*2, 3, 1, 1, bias=False),
                 nn.ReLU(inplace=True),
-                nn.Conv2d(spnC*2, spnC*3, 3, 1, 1, bias=False),
+                # nn.Conv2d(spnC*2, spnC*3, 3, 1, 1, bias=False),
+                nn.Conv2d(spnC*2, spnC*2, 3, 1, 1, bias=False),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(spnC*2, spnC*1, 3, 1, 1, bias=False),
             )]
             self.refine_spn += [nn.Conv2d(1,spnC,3,1,1,bias=False)]
             self.refine_spn += [nn.Conv2d(spnC,1,3,1,1,bias=False)]
@@ -157,13 +165,14 @@ class AnyNet(nn.Module):
 
         if self.refine_spn:
             spn_out = self.refine_spn[0](nn.functional.upsample(left, (img_size[2]//4, img_size[3]//4), mode='bilinear'))
-            G1, G2, G3 = spn_out[:,:self.spn_init_channels,:,:], spn_out[:,self.spn_init_channels:self.spn_init_channels*2,:,:], spn_out[:,self.spn_init_channels*2:,:,:]
-            sum_abs = G1.abs() + G2.abs() + G3.abs()
-            G1 = torch.div(G1, sum_abs + 1e-8)
-            G2 = torch.div(G2, sum_abs + 1e-8)
-            G3 = torch.div(G3, sum_abs + 1e-8)
+            # G1, G2, G3 = spn_out[:,:self.spn_init_channels,:,:], spn_out[:,self.spn_init_channels:self.spn_init_channels*2,:,:], spn_out[:,self.spn_init_channels*2:,:,:]
+            # sum_abs = G1.abs() + G2.abs() + G3.abs()
+            # G1 = torch.div(G1, sum_abs + 1e-8)
+            # G2 = torch.div(G2, sum_abs + 1e-8)
+            # G3 = torch.div(G3, sum_abs + 1e-8)
             pred_flow = nn.functional.upsample(pred[-1], (img_size[2]//4, img_size[3]//4), mode='bilinear')
-            refine_flow = self.spn_layer(self.refine_spn[1](pred_flow), G1, G2, G3)
+            refine_flow = self.cspn_layer(spn_out, self.refine_spn[1](pred_flow))
+            # refine_flow = self.spn_layer(self.refine_spn[1](pred_flow), G1, G2, G3)
             refine_flow = self.refine_spn[2](refine_flow)
             pred.append(nn.functional.upsample(refine_flow, (img_size[2] , img_size[3]), mode='bilinear'))
 
