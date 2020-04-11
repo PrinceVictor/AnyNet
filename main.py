@@ -23,7 +23,7 @@ parser.add_argument('--epochs', type=int, default=10,
                     help='number of epochs to train')
 parser.add_argument('--start_epoch', type=int, default=0,
                     help='number of epochs to train')
-parser.add_argument('--train_bsize', type=int, default=36,
+parser.add_argument('--train_bsize', type=int, default=12,
                     help='batch size for training (default: 12)')
 parser.add_argument('--test_bsize', type=int, default=4,
                     help='batch size for testing (default: 8)')
@@ -77,7 +77,7 @@ def main():
         if os.path.isfile(args.resume):
             log.info("=> loading checkpoint '{}'".format(args.resume))
             checkpoint = torch.load(args.resume)
-            args.start_epoch = checkpoint['epoch']
+            args.start_epoch = checkpoint['epoch']+1
             model.load_state_dict(checkpoint['state_dict'], strict=False)
             optimizer.load_state_dict(checkpoint['optimizer'])
             log.info("=> loaded checkpoint '{}' (epoch {})"
@@ -101,13 +101,15 @@ def main():
             'optimizer': optimizer.state_dict(),
         }, savefilename)
 
-    test(TestImgLoader, model, log)
+        test(TestImgLoader, model, log)
+
+
     log.info('full training time = {:.2f} Hours'.format((time.time() - start_full_time) / 3600))
 
 
 def train(dataloader, model, optimizer, log, epoch=0):
 
-    stages = 3 + args.with_spn
+    stages = 3 + (args.with_spn or args.with_cspn)
     losses = [AverageMeter() for _ in range(stages)]
     length_loader = len(dataloader)
 
@@ -145,7 +147,7 @@ def train(dataloader, model, optimizer, log, epoch=0):
 
 def test(dataloader, model, log):
 
-    stages = 3 + args.with_spn
+    stages = 3 + (args.with_spn or args.with_cspn)
     EPEs = [AverageMeter() for _ in range(stages)]
     length_loader = len(dataloader)
 
