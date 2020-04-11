@@ -63,6 +63,8 @@ if args.loadmodel is not None:
 
 if __name__ == '__main__':
 
+    print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
+
     process = preprocess.get_transform(augment=False)
 
     left_images_dir = '/home/victor/dataset/data_scene_flow/testing/image_2'
