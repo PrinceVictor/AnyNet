@@ -38,6 +38,7 @@ parser.add_argument('--resume', type=str, default=None,
 parser.add_argument('--lr', type=float, default=5e-4,
                     help='learning rate')
 parser.add_argument('--with_spn', action='store_true', help='with spn network or not')
+parser.add_argument('--with_cspn', action='store_true', help='with cspn network or not')
 parser.add_argument('--print_freq', type=int, default=5, help='print frequence')
 parser.add_argument('--init_channels', type=int, default=1, help='initial channels for 2d feature extractor')
 parser.add_argument('--nblocks', type=int, default=2, help='number of layers in each stage')

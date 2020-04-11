@@ -27,6 +27,7 @@ parser.add_argument('--maxdisplist', type=int, nargs='+', default=[12, 3, 3])
 parser.add_argument('--save_path', type=str, default='results/finetune_anynet',
                     help='the path of saving checkpoints and log')
 parser.add_argument('--with_spn', action='store_true', help='with spn network or not')
+parser.add_argument('--with_cspn', action='store_true', help='with cspn network or not')
 parser.add_argument('--print_freq', type=int, default=5, help='print frequence')
 parser.add_argument('--init_channels', type=int, default=1, help='initial channels for 2d feature extractor')
 parser.add_argument('--nblocks', type=int, default=2, help='number of layers in each stage')
@@ -55,10 +56,10 @@ print('args spn {}'.format(args.with_spn))
 model = models.anynet.AnyNet(args)
 model = nn.DataParallel(model).cuda()
 
-# if args.loadmodel is not None:
-#     print('load AnyNet')
-#     state_dict = torch.load(args.loadmodel)
-#     model.load_state_dict(state_dict['state_dict'], strict=False)
+if args.loadmodel is not None:
+    print('load AnyNet')
+    state_dict = torch.load(args.loadmodel)
+    model.load_state_dict(state_dict['state_dict'], strict=False)
 
 if __name__ == '__main__':
 
