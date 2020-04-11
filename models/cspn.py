@@ -53,9 +53,12 @@ class Affinity_Propagate(nn.Module):
             param.requires_grad = False
 
         gate_wb, gate_sum = self.affinity_normalization(guidance)
+        # print('gate_wb shape: {}'.format(gate_wb.shape))
+        # print('gate_sum shape: {}'.format(gate_sum.shape))
 
         # pad input and convert to 8 channel 3D features
         raw_depth_input = blur_depth
+        # print('blur_depth shape: {}'.format(blur_depth.shape))
 
         #blur_depht_pad = nn.ZeroPad2d((1,1,1,1))
         result_depth = blur_depth

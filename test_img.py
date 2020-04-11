@@ -15,6 +15,7 @@ import numpy as np
 import time
 import os
 import glob
+import sys
 
 parser = argparse.ArgumentParser(description='inference img')
 parser.add_argument('--loadmodel', default='/home/victor/mobile_robot/AnyNet/para/checkpoint/kitti2015_ck/checkpoint.tar',
@@ -56,14 +57,16 @@ print('args spn {}'.format(args.with_spn))
 model = models.anynet.AnyNet(args)
 model = nn.DataParallel(model).cuda()
 
-if args.loadmodel is not None:
-    print('load AnyNet')
-    state_dict = torch.load(args.loadmodel)
-    model.load_state_dict(state_dict['state_dict'], strict=False)
+# if args.loadmodel is not None:
+#     print('load AnyNet')
+#     state_dict = torch.load(args.loadmodel)
+#     model.load_state_dict(state_dict['state_dict'], strict=False)
 
 if __name__ == '__main__':
 
     print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
+    print(model)
+    # sys.exit()
 
     process = preprocess.get_transform(augment=False)
 

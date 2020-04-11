@@ -140,7 +140,7 @@ def main():
 
 def train(dataloader, model, optimizer, log, epoch=0):
 
-    stages = 3 + args.with_spn
+    stages = 3 + (args.with_spn or args.with_cspn)
     losses = [AverageMeter() for _ in range(stages)]
     length_loader = len(dataloader)
 
