@@ -44,7 +44,7 @@ class AnyNet(nn.Module):
             # self.refine_spn += [nn.Sequential(OrderedDict([('disp1', nn.Conv2d(1, 1, 3, 1, 1, bias=False)), ]))]
             # self.refine_spn += [nn.Sequential(OrderedDict([('disp2', nn.Conv2d(1, 1,3,1,1,bias=False)),]))]
             self.refine_cspn = nn.ModuleList(self.refine_cspn)
-
+            self.refine_spn = None
         elif self.with_spn:
             try:
             #     # from .spn.modules.gaterecurrent2dnoind import GateRecurrent2dnoind
@@ -66,6 +66,7 @@ class AnyNet(nn.Module):
             self.refine_spn += [nn.Conv2d(1,spnC,3,1,1,bias=False)]
             self.refine_spn += [nn.Conv2d(spnC,1,3,1,1,bias=False)]
             self.refine_spn = nn.ModuleList(self.refine_spn)
+            self.refine_cspn = None
         else:
             self.refine_spn = None
             self.refine_cspn = None
@@ -179,7 +180,7 @@ class AnyNet(nn.Module):
                 pred.append(disp_up+pred[scale-1])
 
         if self.refine_cspn:
-            spn_out = self.refine_spn[0](
+            spn_out = self.refine_cspn[0](
                 nn.functional.upsample(left, (img_size[2] // 4, img_size[3] // 4), mode='bilinear'))
             pred_flow = nn.functional.upsample(pred[-1], (img_size[2] // 4, img_size[3] // 4), mode='bilinear')
             # refine_flow = self.cspn_layer(spn_out, self.refine_spn[1](pred_flow))
