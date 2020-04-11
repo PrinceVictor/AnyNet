@@ -8,6 +8,7 @@ import math
 from .submodules import post_3dconvs,feature_extraction_conv
 import sys
 from .cspn import Affinity_Propagate
+from collections import OrderedDict
 
 
 class AnyNet(nn.Module):
@@ -24,32 +25,54 @@ class AnyNet(nn.Module):
         self.with_spn = args.with_spn
 
         if self.with_spn:
-            try:
-                # from .spn.modules.gaterecurrent2dnoind import GateRecurrent2dnoind
-                from .spn_t1.modules.gaterecurrent2dnoind import GateRecurrent2dnoind
-            except:
-                print('Cannot load spn model')
-                sys.exit()
+            # try:
+            #     # from .spn.modules.gaterecurrent2dnoind import GateRecurrent2dnoind
+            #     from .spn_t1.modules.gaterecurrent2dnoind import GateRecurrent2dnoind
+            # except:
+            #     print('Cannot load spn model')
+            #     sys.exit()
             # self.spn_layer = GateRecurrent2dnoind(True,False)
             cspn_config_default = {'step': 16, 'kernel': 3, 'norm_type': '8sum'}
             self.cspn_layer = Affinity_Propagate(cspn_config_default['step'],
                                                  cspn_config_default['kernel'],
                                                  norm_type=cspn_config_default['norm_type'])
             spnC = self.spn_init_channels
-            self.refine_spn = [nn.Sequential(
-                nn.Conv2d(3, spnC*2, 3, 1, 1, bias=False),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(spnC*2, spnC*2, 3, 1, 1, bias=False),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(spnC*2, spnC*2, 3, 1, 1, bias=False),
-                nn.ReLU(inplace=True),
-                # nn.Conv2d(spnC*2, spnC*3, 3, 1, 1, bias=False),
-                nn.Conv2d(spnC*2, spnC*2, 3, 1, 1, bias=False),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(spnC*2, spnC*1, 3, 1, 1, bias=False),
-            )]
-            self.refine_spn += [nn.Conv2d(1,spnC,3,1,1,bias=False)]
-            self.refine_spn += [nn.Conv2d(spnC,1,3,1,1,bias=False)]
+            self.refine_spn = [nn.Sequential(OrderedDict([
+                ('conv1', nn.Conv2d(3, spnC*2, 3, 1, 1, bias=False)),
+                ('relu1', nn.ReLU(inplace=True)),
+                ('conv2', nn.Conv2d(spnC*2, spnC*2, 3, 1, 1, bias=False)),
+                ('relu2', nn.ReLU(inplace=True)),
+                ('conv3', nn.Conv2d(spnC*2, spnC*2, 3, 1, 1, bias=False)),
+                ('relu3', nn.ReLU(inplace=True)),
+                ('conv4', nn.Conv2d(spnC*2, spnC, 3, 1, 1, bias=False)),
+                # ('relu4', nn.ReLU(inplace=True)),
+
+                # nn.Conv2d(spnC*2, spnC*2, 3, 1, 1, bias=False),
+                # nn.ReLU(inplace=True),
+                # nn.Conv2d(spnC*2, spnC*2, 3, 1, 1, bias=False),
+                # nn.ReLU(inplace=True),
+                # # nn.Conv2d(spnC*2, spnC*3, 3, 1, 1, bias=False),
+                # nn.Conv2d(spnC*2, spnC*2, 3, 1, 1, bias=False),
+                # nn.ReLU(inplace=True),
+                # nn.Conv2d(spnC*2, spnC*1, 3, 1, 1, bias=False),
+            ]))]
+            # # self.refine_spn += [nn.Conv2d(1,spnC,3,1,1,bias=False)]
+            # self.refine_spn += [nn.Sequential(OrderedDict([('disp1', nn.Conv2d(1, 1, 3, 1, 1, bias=False)), ]))]
+            # self.refine_spn += [nn.Sequential(OrderedDict([('disp2', nn.Conv2d(1, 1,3,1,1,bias=False)),]))]
+            # self.refine_spn = [nn.Sequential(
+            #     nn.Conv2d(3, spnC * 2, 3, 1, 1, bias=False),
+            #     nn.ReLU(inplace=True),
+            #     nn.Conv2d(spnC * 2, spnC * 2, 3, 1, 1, bias=False),
+            #     nn.ReLU(inplace=True),
+            #     nn.Conv2d(spnC * 2, spnC * 2, 3, 1, 1, bias=False),
+            #     nn.ReLU(inplace=True),
+            #     # nn.Conv2d(spnC*2, spnC*3, 3, 1, 1, bias=False),
+            #     nn.Conv2d(spnC * 2, spnC * 2, 3, 1, 1, bias=False),
+            #     nn.ReLU(inplace=True),
+            #     nn.Conv2d(spnC * 2, spnC * 1, 3, 1, 1, bias=False),
+            # )]
+            # self.refine_spn += [nn.Conv2d(1, 1, 3, 1, 1, bias=False)]
+            # self.refine_spn += [nn.Conv2d(1, 1, 3, 1, 1, bias=False)]
             self.refine_spn = nn.ModuleList(self.refine_spn)
         else:
             self.refine_spn = None
@@ -64,8 +87,8 @@ class AnyNet(nn.Module):
             self.volume_postprocess.append(net3d)
         self.volume_postprocess = nn.ModuleList(self.volume_postprocess)
 
-
         for m in self.modules():
+            # print(m)
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
@@ -171,9 +194,11 @@ class AnyNet(nn.Module):
             # G2 = torch.div(G2, sum_abs + 1e-8)
             # G3 = torch.div(G3, sum_abs + 1e-8)
             pred_flow = nn.functional.upsample(pred[-1], (img_size[2]//4, img_size[3]//4), mode='bilinear')
-            refine_flow = self.cspn_layer(spn_out, self.refine_spn[1](pred_flow))
+            # refine_flow = self.cspn_layer(spn_out, self.refine_spn[1](pred_flow))
+            refine_flow = self.cspn_layer(spn_out, pred_flow)
             # refine_flow = self.spn_layer(self.refine_spn[1](pred_flow), G1, G2, G3)
-            refine_flow = self.refine_spn[2](refine_flow)
+            # refine_flow = self.refine_spn[2](refine_flow)
+            # refine_flow = self.refine_spn[2](refine_flow)
             pred.append(nn.functional.upsample(refine_flow, (img_size[2] , img_size[3]), mode='bilinear'))
 
 

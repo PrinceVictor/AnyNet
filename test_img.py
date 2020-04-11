@@ -79,7 +79,7 @@ if __name__ == '__main__':
         right_image_paths = [right_images_dir]
 
     model.eval()
-    print(model)
+    # print(model)
 
     for i in range(len(left_image_paths)):
 
@@ -103,7 +103,7 @@ if __name__ == '__main__':
         print('i:{} inference time {:.3f}ms FPS {}'.format(i, inference_time*1000, round(1/inference_time)))
         # print(len(outputs))
 
-        print(len(outputs))
+        # print(len(outputs))
         # output = outputs[3].squeeze().cpu()
 
         # break

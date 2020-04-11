@@ -9,7 +9,7 @@ driving_disparity=$scenflow_data_path"/driving/disparity"
 flyingthings3d_frames_cleanpass=$scenflow_data_path"/flyingthings3d/frames_cleanpass"
 flyingthings3d_disparity=$scenflow_data_path"/flyingthings3d/disparity"
 
-mkdir dataset
+mkdir dataset:
 
 ln -s $monkaa_frames_cleanpass dataset/monkaa_frames_cleanpass
 ln -s $monkaa_disparity dataset/monkaa_disparity
