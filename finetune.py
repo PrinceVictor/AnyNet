@@ -25,6 +25,8 @@ parser.add_argument('--datatype', default='2015',
 parser.add_argument('--datapath', default=None, help='datapath')
 parser.add_argument('--epochs', type=int, default=300,
                     help='number of epochs to train')
+parser.add_argument('--start_epoch', type=int, default=0,
+                    help='number of epochs to train')
 parser.add_argument('--train_bsize', type=int, default=2,
                     help='batch size for training (default: 6)')
 parser.add_argument('--test_bsize', type=int, default=4,
@@ -95,7 +97,7 @@ def main():
         else:
             log.info("=> no pretrained model found at '{}'".format(args.pretrained))
             log.info("=> Will start from scratch.")
-    args.start_epoch = 0
+    # args.start_epoch = 0
     if args.resume:
         if os.path.isfile(args.resume):
             log.info("=> loading checkpoint '{}'".format(args.resume))
