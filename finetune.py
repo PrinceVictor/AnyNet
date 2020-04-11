@@ -25,9 +25,9 @@ parser.add_argument('--datatype', default='2015',
 parser.add_argument('--datapath', default=None, help='datapath')
 parser.add_argument('--epochs', type=int, default=300,
                     help='number of epochs to train')
-parser.add_argument('--train_bsize', type=int, default=6,
+parser.add_argument('--train_bsize', type=int, default=2,
                     help='batch size for training (default: 6)')
-parser.add_argument('--test_bsize', type=int, default=1,
+parser.add_argument('--test_bsize', type=int, default=4,
                     help='batch size for testing (default: 8)')
 parser.add_argument('--save_path', type=str, default='results/finetune_anynet',
                     help='the path of saving checkpoints and log')
@@ -43,7 +43,7 @@ parser.add_argument('--channels_3d', type=int, default=4, help='number of initia
 parser.add_argument('--layers_3d', type=int, default=4, help='number of initial layers in 3d network')
 parser.add_argument('--growth_rate', type=int, nargs='+', default=[4,1,1], help='growth rate in the 3d network')
 parser.add_argument('--spn_init_channels', type=int, default=8, help='initial channels for spnet')
-parser.add_argument('--start_epoch_for_spn', type=int, default=121)
+parser.add_argument('--start_epoch_for_spn', type=int, default=0)
 parser.add_argument('--pretrained', type=str, default='results/pretrained_anynet/checkpoint.tar',
                     help='pretrained model path')
 parser.add_argument('--split_file', type=str, default=None)
@@ -100,7 +100,7 @@ def main():
         if os.path.isfile(args.resume):
             log.info("=> loading checkpoint '{}'".format(args.resume))
             checkpoint = torch.load(args.resume)
-            model.load_state_dict(checkpoint['state_dict'])
+            model.load_state_dict(checkpoint['state_dict'], strict=False)
             optimizer.load_state_dict(checkpoint['optimizer'])
             log.info("=> loaded checkpoint '{}' (epoch {})"
                      .format(args.resume, checkpoint['epoch']))
@@ -198,12 +198,13 @@ def test(dataloader, model, log):
         with torch.no_grad():
             outputs = model(imgL, imgR)
 
-        inference_time = time.time() -start_time
-        print('output size {}'.format(len(outputs)))
-            # for x in range(stages):
-            #     output = torch.squeeze(outputs[x], 1)
-            #     D1s[x].update(error_estimating(output, disp_L).item())
 
+        # print('output size {}'.format(len(outputs)))
+            for x in range(stages):
+                output = torch.squeeze(outputs[x], 1)
+                D1s[x].update(error_estimating(output, disp_L).item())
+
+        inference_time = time.time() - start_time
         # output = outputs[3].squeeze().cpu()
         # disparity = output.numpy()
         # disparity = (disparity).astype('uint8')
@@ -212,13 +213,10 @@ def test(dataloader, model, log):
         # disparity.save('results/disp'+ str(batch_idx) +'.png')
 
         # log.info('stage4 size {}' .format(output.shape))
-        # info_str = '\t'.join(['Stage {} = {:'.4f}({:.4f})'.format(x, D1s[x].val, D1s[x].avg) for x in range(stages)])
-        print('inference time {:.3f}ms {}' .format(inference_time*1000, round(1.0/inference_time)))
-        # log.info('[{}/{}] {} \tinference {:.3f}ms FPS {}'.format(
-            # batch_idx, length_loader, info_str, inference_time, round(1.0/inference_time)))
-
-        # break
-
+        info_str = '\t'.join(['Stage {} = {:.4f}({:.4f})'.format(x, D1s[x].val, D1s[x].avg) for x in range(stages)])
+        # print('inference time {:.3f}ms {}' .format(inference_time*1000, round(1.0/inference_time)))
+        log.info('[{}/{}] {} \tinference {:.3f}ms FPS {}'.format(
+            batch_idx, length_loader, info_str, inference_time, round(1.0/inference_time)))
     info_str = ', '.join(['Stage {}={:.4f}'.format(x, D1s[x].avg) for x in range(stages)])
     log.info('Average test 3-Pixel Error = ' + info_str)
 

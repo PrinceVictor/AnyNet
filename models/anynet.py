@@ -31,7 +31,7 @@ class AnyNet(nn.Module):
                 print('Cannot load spn model')
                 sys.exit()
             # self.spn_layer = GateRecurrent2dnoind(True,False)
-            cspn_config_default = {'step': 24, 'kernel': 3, 'norm_type': '8sum'}
+            cspn_config_default = {'step': 16, 'kernel': 3, 'norm_type': '8sum'}
             self.cspn_layer = Affinity_Propagate(cspn_config_default['step'],
                                                  cspn_config_default['kernel'],
                                                  norm_type=cspn_config_default['norm_type'])

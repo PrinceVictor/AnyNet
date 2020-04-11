@@ -103,9 +103,10 @@ if __name__ == '__main__':
         print('i:{} inference time {:.3f}ms FPS {}'.format(i, inference_time*1000, round(1/inference_time)))
         # print(len(outputs))
 
-        output = outputs[3].squeeze().cpu()
+        print(len(outputs))
+        # output = outputs[3].squeeze().cpu()
 
-        break
+        # break
         # disparity = output.numpy()
         # disparity = (disparity).astype('uint8')
         # disparity = Image.fromarray(disparity)
