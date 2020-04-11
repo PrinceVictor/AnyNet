@@ -27,7 +27,7 @@ parser.add_argument('--epochs', type=int, default=300,
                     help='number of epochs to train')
 parser.add_argument('--start_epoch', type=int, default=0,
                     help='number of epochs to train')
-parser.add_argument('--train_bsize', type=int, default=2,
+parser.add_argument('--train_bsize', type=int, default=6,
                     help='batch size for training (default: 6)')
 parser.add_argument('--test_bsize', type=int, default=4,
                     help='batch size for testing (default: 8)')
@@ -75,7 +75,7 @@ def main():
 
     TestImgLoader = torch.utils.data.DataLoader(
         DA.myImageFloder(test_left_img, test_right_img, test_left_disp, False),
-        batch_size=args.test_bsize, shuffle=False, num_workers=1, drop_last=False)
+        batch_size=args.test_bsize, shuffle=False, num_workers=2, drop_last=False)
 
     if not os.path.isdir(args.save_path):
         os.makedirs(args.save_path)
