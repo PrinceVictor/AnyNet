@@ -17,11 +17,13 @@ parser = argparse.ArgumentParser(description='AnyNet with Flyingthings3d')
 parser.add_argument('--maxdisp', type=int, default=192, help='maxium disparity')
 parser.add_argument('--loss_weights', type=float, nargs='+', default=[0.25, 0.5, 1., 1.])
 parser.add_argument('--maxdisplist', type=int, nargs='+', default=[12, 3, 3])
-parser.add_argument('--datapath', default='dataset/',
+parser.add_argument('--datapath', default='/media/home/soc232/project_wangjiali/dataset/SceneFlow',
                     help='datapath')
 parser.add_argument('--epochs', type=int, default=10,
                     help='number of epochs to train')
-parser.add_argument('--train_bsize', type=int, default=6,
+parser.add_argument('--start_epoch', type=int, default=0,
+                    help='number of epochs to train')
+parser.add_argument('--train_bsize', type=int, default=36,
                     help='batch size for training (default: 12)')
 parser.add_argument('--test_bsize', type=int, default=4,
                     help='batch size for testing (default: 8)')
@@ -70,13 +72,13 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999))
     log.info('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
 
-    args.start_epoch = 0
+#    args.start_epoch = 0
     if args.resume:
         if os.path.isfile(args.resume):
             log.info("=> loading checkpoint '{}'".format(args.resume))
             checkpoint = torch.load(args.resume)
             args.start_epoch = checkpoint['epoch']
-            model.load_state_dict(checkpoint['state_dict'])
+            model.load_state_dict(checkpoint['state_dict'], strict=False)
             optimizer.load_state_dict(checkpoint['optimizer'])
             log.info("=> loaded checkpoint '{}' (epoch {})"
                      .format(args.resume, checkpoint['epoch']))
