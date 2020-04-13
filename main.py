@@ -23,9 +23,9 @@ parser.add_argument('--epochs', type=int, default=10,
                     help='number of epochs to train')
 parser.add_argument('--start_epoch', type=int, default=0,
                     help='number of epochs to train')
-parser.add_argument('--train_bsize', type=int, default=36,
+parser.add_argument('--train_bsize', type=int, default=12,
                     help='batch size for training (default: 12)')
-parser.add_argument('--test_bsize', type=int, default=4,
+parser.add_argument('--test_bsize', type=int, default=8,
                     help='batch size for testing (default: 8)')
 parser.add_argument('--save_path', type=str, default='results/pretrained_anynet',
                     help='the path of saving checkpoints and log')
@@ -107,7 +107,7 @@ def main():
 
 def train(dataloader, model, optimizer, log, epoch=0):
 
-    stages = 3 + args.with_spn
+    stages = 3 + (args.with_spn or args.with_cspn)
     losses = [AverageMeter() for _ in range(stages)]
     length_loader = len(dataloader)
 
@@ -145,7 +145,7 @@ def train(dataloader, model, optimizer, log, epoch=0):
 
 def test(dataloader, model, log):
 
-    stages = 3 + args.with_spn
+    stages = 3 + (args.with_spn or args.with_cspn)
     EPEs = [AverageMeter() for _ in range(stages)]
     length_loader = len(dataloader)
 

@@ -32,11 +32,16 @@ class AnyNet(nn.Module):
                                                  norm_type=cspn_config_default['norm_type'])
             spnC = self.spn_init_channels
             self.refine_cspn = [nn.Sequential(OrderedDict([
+                ('bn0', nn.BatchNorm2d(3)),
+                ('relu0', nn.ReLU(inplace=True)),
                 ('conv1', nn.Conv2d(3, spnC * 2, 3, 1, 1, bias=False)),
+                ('bn1', nn.BatchNorm2d(spnC * 2)),
                 ('relu1', nn.ReLU(inplace=True)),
                 ('conv2', nn.Conv2d(spnC * 2, spnC * 2, 3, 1, 1, bias=False)),
+                ('bn2', nn.BatchNorm2d(spnC * 2)),
                 ('relu2', nn.ReLU(inplace=True)),
                 ('conv3', nn.Conv2d(spnC * 2, spnC * 2, 3, 1, 1, bias=False)),
+                ('bn3', nn.BatchNorm2d(spnC * 2)),
                 ('relu3', nn.ReLU(inplace=True)),
                 ('conv4', nn.Conv2d(spnC * 2, spnC, 3, 1, 1, bias=False)),
                 # ('relu4', nn.ReLU(inplace=True)),
@@ -180,13 +185,15 @@ class AnyNet(nn.Module):
                 pred.append(disp_up+pred[scale-1])
 
         if self.refine_cspn:
-            spn_out = self.refine_cspn[0](
-                nn.functional.upsample(left, (img_size[2] // 4, img_size[3] // 4), mode='bilinear'))
-            pred_flow = nn.functional.upsample(pred[-1], (img_size[2] // 4, img_size[3] // 4), mode='bilinear')
+            # spn_out = self.refine_cspn[0](
+            #     nn.functional.upsample(left, (img_size[2] // 4, img_size[3] // 4), mode='bilinear'))
+            spn_out = self.refine_cspn[0](left)
+            # pred_flow = nn.functional.upsample(pred[-1], (img_size[2] // 4, img_size[3] // 4), mode='bilinear')
             # refine_flow = self.cspn_layer(spn_out, self.refine_spn[1](pred_flow))
-            refine_flow = self.cspn_layer(spn_out, pred_flow)
+            refine_disp = self.cspn_layer(spn_out, pred[-1])
             # refine_flow = self.refine_spn[2](refine_flow)
-            pred.append(nn.functional.upsample(refine_flow, (img_size[2], img_size[3]), mode='bilinear'))
+            pred.append(refine_disp)
+            # pred.append(nn.functional.upsample(refine_flow, (img_size[2], img_size[3]), mode='bilinear'))
 
         elif self.refine_spn:
             spn_out = self.refine_spn[0](
