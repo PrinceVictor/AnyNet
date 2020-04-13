@@ -77,7 +77,7 @@ def main():
         if os.path.isfile(args.resume):
             log.info("=> loading checkpoint '{}'".format(args.resume))
             checkpoint = torch.load(args.resume)
-            args.start_epoch = checkpoint['epoch']
+            args.start_epoch = checkpoint['epoch']+1
             model.load_state_dict(checkpoint['state_dict'], strict=False)
             optimizer.load_state_dict(checkpoint['optimizer'])
             log.info("=> loaded checkpoint '{}' (epoch {})"
@@ -94,6 +94,8 @@ def main():
 
         train(TrainImgLoader, model, optimizer, log, epoch)
 
+        test(TestImgLoader, model, log)
+
         savefilename = args.save_path + '/checkpoint.tar'
         torch.save({
             'epoch': epoch,
@@ -101,7 +103,6 @@ def main():
             'optimizer': optimizer.state_dict(),
         }, savefilename)
 
-    test(TestImgLoader, model, log)
     log.info('full training time = {:.2f} Hours'.format((time.time() - start_full_time) / 3600))
 
 

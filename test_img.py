@@ -102,7 +102,7 @@ if __name__ == '__main__':
             outputs = model(imgL, imgR)
         inference_time = time.time() - start_time
         print('i:{} inference time {:.3f}ms FPS {}'.format(i, inference_time*1000, round(1/inference_time)))
-        # print(len(outputs))
+        print(len(outputs))
 
         # print(len(outputs))
         # output = outputs[3].squeeze().cpu()
