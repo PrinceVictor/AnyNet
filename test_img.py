@@ -56,10 +56,10 @@ print('args spn {}'.format(args.with_spn))
 model = models.anynet.AnyNet(args)
 model = nn.DataParallel(model).cuda()
 
-# if args.loadmodel is not None:
-#     print('load AnyNet')
-#     state_dict = torch.load(args.loadmodel)
-#     model.load_state_dict(state_dict['state_dict'], strict=False)
+if args.loadmodel is not None:
+    print('load AnyNet')
+    state_dict = torch.load(args.loadmodel)
+    model.load_state_dict(state_dict['state_dict'], strict=False)
 
 if __name__ == '__main__':
 
@@ -82,6 +82,9 @@ if __name__ == '__main__':
     model.eval()
     # print(model)
 
+    # for name, param in model.named_parameters():
+    #     print('name {}, para {}\n'.format(name, param))
+
     for i in range(len(left_image_paths)):
 
         imgL = Image.open(left_image_paths[i])
@@ -102,7 +105,7 @@ if __name__ == '__main__':
             outputs = model(imgL, imgR)
         inference_time = time.time() - start_time
         print('i:{} inference time {:.3f}ms FPS {}'.format(i, inference_time*1000, round(1/inference_time)))
-        print(len(outputs))
+        break
 
         # print(len(outputs))
         # output = outputs[3].squeeze().cpu()

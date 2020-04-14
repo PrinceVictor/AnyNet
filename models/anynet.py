@@ -26,14 +26,14 @@ class AnyNet(nn.Module):
         self.with_cspn = args.with_cspn
 
         if self.with_cspn:
-            cspn_config_default = {'step': 16, 'kernel': 3, 'norm_type': '8sum'}
+            cspn_config_default = {'step': 24, 'kernel': 3, 'norm_type': '8sum'}
             self.cspn_layer = Affinity_Propagate(cspn_config_default['step'],
                                                  cspn_config_default['kernel'],
                                                  norm_type=cspn_config_default['norm_type'])
             spnC = self.spn_init_channels
             self.refine_cspn = [nn.Sequential(OrderedDict([
-                ('bn0', nn.BatchNorm2d(3)),
-                ('relu0', nn.ReLU(inplace=True)),
+                # ('bn0', nn.BatchNorm2d(3)),
+                # ('relu0', nn.ReLU(inplace=True)),
                 ('conv1', nn.Conv2d(3, spnC * 2, 3, 1, 1, bias=False)),
                 ('bn1', nn.BatchNorm2d(spnC * 2)),
                 ('relu1', nn.ReLU(inplace=True)),
@@ -87,10 +87,10 @@ class AnyNet(nn.Module):
         self.volume_postprocess = nn.ModuleList(self.volume_postprocess)
 
         for m in self.modules():
-            # print(m)
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
+                m.weight.data.zero_()
             elif isinstance(m, nn.Conv3d):
                 n = m.kernel_size[0] * m.kernel_size[1]*m.kernel_size[2] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
