@@ -34,16 +34,16 @@ class AnyNet(nn.Module):
             self.refine_cspn = [nn.Sequential(OrderedDict([
                 # ('bn0', nn.BatchNorm2d(3)),
                 # ('relu0', nn.ReLU(inplace=True)),
-                ('conv1', nn.Conv2d(3, spnC * 2, 3, 1, 1, bias=False)),
+                ('conv1', nn.Conv2d(3, spnC * 2, 3, 1, padding=1, dilation=1, bias=False)),
                 ('bn1', nn.BatchNorm2d(spnC * 2)),
                 ('relu1', nn.ReLU(inplace=True)),
-                ('conv2', nn.Conv2d(spnC * 2, spnC * 2, 3, 1, 1, bias=False)),
+                ('conv2', nn.Conv2d(spnC * 2, spnC * 2, 3, 1, padding=2, dilation=2, bias=False)),
                 ('bn2', nn.BatchNorm2d(spnC * 2)),
                 ('relu2', nn.ReLU(inplace=True)),
-                ('conv3', nn.Conv2d(spnC * 2, spnC * 2, 3, 1, 1, bias=False)),
+                ('conv3', nn.Conv2d(spnC * 2, spnC * 2, 3, 1, padding=3, dilation=3, bias=False)),
                 ('bn3', nn.BatchNorm2d(spnC * 2)),
                 ('relu3', nn.ReLU(inplace=True)),
-                ('conv4', nn.Conv2d(spnC * 2, spnC, 3, 1, 1, bias=False)),
+                ('conv4', nn.Conv2d(spnC * 2, spnC, 3, 1, padding=5, dilation=5, bias=False)),
                 # ('relu4', nn.ReLU(inplace=True)),
             ]))]
             # self.refine_spn += [nn.Sequential(OrderedDict([('disp1', nn.Conv2d(1, 1, 3, 1, 1, bias=False)), ]))]
@@ -89,8 +89,8 @@ class AnyNet(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
-                m.weight.data.zero_()
+                # m.weight.data.normal_(0, math.sqrt(2. / n))
+                nn.init.kaiming_normal_(m.weight)
             elif isinstance(m, nn.Conv3d):
                 n = m.kernel_size[0] * m.kernel_size[1]*m.kernel_size[2] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
