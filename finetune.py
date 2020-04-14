@@ -17,7 +17,7 @@ import models.anynet
 parser = argparse.ArgumentParser(description='Anynet fintune on KITTI')
 parser.add_argument('--maxdisp', type=int, default=192,
                     help='maxium disparity')
-parser.add_argument('--loss_weights', type=float, nargs='+', default=[0.25, 0.5, 1., 1.])
+parser.add_argument('--loss_weights', type=float, nargs='+', default=[0.25, 0.5, 1., 1.2])
 parser.add_argument('--max_disparity', type=int, default=192)
 parser.add_argument('--maxdisplist', type=int, nargs='+', default=[12, 3, 3])
 parser.add_argument('--datatype', default='2015',
@@ -62,6 +62,8 @@ elif args.datatype == '2012':
 elif args.datatype == 'other':
     from dataloader import diy_dataset as ls
 
+# device_ids = [2, 3]
+torch.cuda.set_device(1)
 
 def main():
     global args
@@ -85,7 +87,7 @@ def main():
 
     # print('args spn {}'.format(args.with_spn))
     model = models.anynet.AnyNet(args)
-    model = nn.DataParallel(model).cuda()
+    model = nn.DataParallel(model, device_ids=device_ids, output_device=[3]).cuda(device_ids=2)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999))
     log.info('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
 
@@ -148,7 +150,7 @@ def train(dataloader, model, optimizer, log, epoch=0):
     model.train()
 
     for batch_idx, (imgL, imgR, disp_L) in enumerate(dataloader):
-        imgL = imgL.float().cuda()
+        imgL = imgL.float().cuda(div)
         imgR = imgR.float().cuda()
         disp_L = disp_L.float().cuda()
 

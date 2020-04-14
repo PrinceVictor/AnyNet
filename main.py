@@ -15,7 +15,7 @@ import models.anynet
 
 parser = argparse.ArgumentParser(description='AnyNet with Flyingthings3d')
 parser.add_argument('--maxdisp', type=int, default=192, help='maxium disparity')
-parser.add_argument('--loss_weights', type=float, nargs='+', default=[0.25, 0.5, 1., 1.])
+parser.add_argument('--loss_weights', type=float, nargs='+', default=[0.25, 0.5, 1., 1.2])
 parser.add_argument('--maxdisplist', type=int, nargs='+', default=[12, 3, 3])
 parser.add_argument('--datapath', default='/media/home/soc232/project_wangjiali/dataset/SceneFlow',
                     help='datapath')
@@ -110,6 +110,7 @@ def train(dataloader, model, optimizer, log, epoch=0):
 
     stages = 3 + (args.with_spn or args.with_cspn)
     losses = [AverageMeter() for _ in range(stages)]
+    EPEs = [AverageMeter() for _ in range(stages)]
     length_loader = len(dataloader)
 
     model.train()
@@ -131,6 +132,16 @@ def train(dataloader, model, optimizer, log, epoch=0):
         sum(loss).backward()
         optimizer.step()
 
+        # for x in range(stages):
+        #     if len(disp_L[mask]) == 0:
+        #         EPEs[x].update(0)
+        #         continue
+        #     output = torch.squeeze(outputs[x], 1)
+        #     output = output[:, 4:, :]
+        #     EPEs[x].update((output[mask] - disp_L[mask]).abs().mean())
+        #     info_str = '\t'.join(
+        #         ['Stage {} = {:.2f}({:.2f})'.format(x, EPEs[x].val, EPEs[x].avg) for x in range(stages)])
+
         for idx in range(stages):
             losses[idx].update(loss[idx].item()/args.loss_weights[idx])
 
@@ -138,8 +149,12 @@ def train(dataloader, model, optimizer, log, epoch=0):
             info_str = ['Stage {} = {:.2f}({:.2f})'.format(x, losses[x].val, losses[x].avg) for x in range(stages)]
             info_str = '\t'.join(info_str)
 
+            for x in range(stages):
+                losses[x].reset()
+
             log.info('Epoch{} [{}/{}] {}'.format(
                 epoch, batch_idx, length_loader, info_str))
+
     info_str = '\t'.join(['Stage {} = {:.2f}'.format(x, losses[x].avg) for x in range(stages)])
     log.info('Average train loss = ' + info_str)
 

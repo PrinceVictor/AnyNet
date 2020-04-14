@@ -26,7 +26,7 @@ class AnyNet(nn.Module):
         self.with_cspn = args.with_cspn
 
         if self.with_cspn:
-            cspn_config_default = {'step': 24, 'kernel': 3, 'norm_type': '8sum'}
+            cspn_config_default = {'step': 12, 'kernel': 3, 'norm_type': '8sum'}
             self.cspn_layer = Affinity_Propagate(cspn_config_default['step'],
                                                  cspn_config_default['kernel'],
                                                  norm_type=cspn_config_default['norm_type'])
@@ -46,7 +46,7 @@ class AnyNet(nn.Module):
                 ('conv4', nn.Conv2d(spnC * 2, spnC, 3, 1, padding=5, dilation=5, bias=False)),
                 # ('relu4', nn.ReLU(inplace=True)),
             ]))]
-            # self.refine_spn += [nn.Sequential(OrderedDict([('disp1', nn.Conv2d(1, 1, 3, 1, 1, bias=False)), ]))]
+            # self.refine_cspn += [nn.Sequential(OrderedDict([('disp1', nn.Conv2d(2, 1, 3, 1, 1, bias=False)), ]))]
             # self.refine_spn += [nn.Sequential(OrderedDict([('disp2', nn.Conv2d(1, 1,3,1,1,bias=False)),]))]
             self.refine_cspn = nn.ModuleList(self.refine_cspn)
             self.refine_spn = None
@@ -89,8 +89,8 @@ class AnyNet(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                # m.weight.data.normal_(0, math.sqrt(2. / n))
-                nn.init.kaiming_normal_(m.weight)
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+                # nn.init.kaiming_normal_(m.weight)
             elif isinstance(m, nn.Conv3d):
                 n = m.kernel_size[0] * m.kernel_size[1]*m.kernel_size[2] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
@@ -185,15 +185,9 @@ class AnyNet(nn.Module):
                 pred.append(disp_up+pred[scale-1])
 
         if self.refine_cspn:
-            # spn_out = self.refine_cspn[0](
-            #     nn.functional.upsample(left, (img_size[2] // 4, img_size[3] // 4), mode='bilinear'))
             spn_out = self.refine_cspn[0](left)
-            # pred_flow = nn.functional.upsample(pred[-1], (img_size[2] // 4, img_size[3] // 4), mode='bilinear')
-            # refine_flow = self.cspn_layer(spn_out, self.refine_spn[1](pred_flow))
             refine_disp = self.cspn_layer(spn_out, pred[-1])
-            # refine_flow = self.refine_spn[2](refine_flow)
             pred.append(refine_disp)
-            # pred.append(nn.functional.upsample(refine_flow, (img_size[2], img_size[3]), mode='bilinear'))
 
         elif self.refine_spn:
             spn_out = self.refine_spn[0](
