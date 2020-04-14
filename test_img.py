@@ -80,7 +80,7 @@ if __name__ == '__main__':
         right_image_paths = [right_images_dir]
 
     model.eval()
-    # print(model)
+
 
     # for name, param in model.named_parameters():
     #     print('name {}, para {}\n'.format(name, param))

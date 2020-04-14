@@ -11,7 +11,7 @@ import time
 from dataloader import KITTILoader as DA
 import utils.logger as logger
 import torch.backends.cudnn as cudnn
-
+from collections import OrderedDict
 import models.anynet
 
 parser = argparse.ArgumentParser(description='Anynet fintune on KITTI')
@@ -35,7 +35,7 @@ parser.add_argument('--save_path', type=str, default='results/finetune_anynet',
                     help='the path of saving checkpoints and log')
 parser.add_argument('--resume', type=str, default=None,
                     help='resume path')
-parser.add_argument('--lr', type=float, default=5e-4,
+parser.add_argument('--lr', type=float, default=10e-4,
                     help='learning rate')
 parser.add_argument('--with_spn', action='store_true', help='with spn network or not')
 parser.add_argument('--with_cspn', action='store_true', help='with cspn network or not')
@@ -51,6 +51,7 @@ parser.add_argument('--pretrained', type=str, default='results/pretrained_anynet
                     help='pretrained model path')
 parser.add_argument('--split_file', type=str, default=None)
 parser.add_argument('--evaluate', action='store_true')
+parser.add_argument('--data_parallel', action='store_true')
 
 
 args = parser.parse_args()
@@ -63,7 +64,7 @@ elif args.datatype == 'other':
     from dataloader import diy_dataset as ls
 
 # device_ids = [2, 3]
-torch.cuda.set_device(1)
+# torch.cuda.set_device(3)
 
 def main():
     global args
@@ -87,14 +88,24 @@ def main():
 
     # print('args spn {}'.format(args.with_spn))
     model = models.anynet.AnyNet(args)
-    model = nn.DataParallel(model, device_ids=device_ids, output_device=[3]).cuda(device_ids=2)
+    # model = nn.DataParallel(model, device_ids=device_ids, output_device=[3]).cuda(device_ids=2)
+    # model = nn.DataParallel(model).cuda()
+    model = model.cuda()
     optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999))
     log.info('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
 
     if args.pretrained:
         if os.path.isfile(args.pretrained):
             checkpoint = torch.load(args.pretrained)
-            model.load_state_dict(checkpoint['state_dict'], strict=False)
+
+            if args.data_parallel == False:
+                new_state_dict = OrderedDict()
+                for k, v in checkpoint['state_dict'].items():
+                    name = k[7:]
+                    new_state_dict[name] = v
+                model.load_state_dict(new_state_dict, strict=False)
+            else:
+                model.load_state_dict(checkpoint['state_dict'], strict=False)
             log.info("=> loaded pretrained model '{}'"
                      .format(args.pretrained))
         else:
@@ -105,7 +116,16 @@ def main():
         if os.path.isfile(args.resume):
             log.info("=> loading checkpoint '{}'".format(args.resume))
             checkpoint = torch.load(args.resume)
-            model.load_state_dict(checkpoint['state_dict'], strict=False)
+
+            if args.data_parallel == False:
+                new_state_dict = OrderedDict()
+                for k, v in checkpoint['state_dict'].items():
+                    name = k[7:]
+                    new_state_dict[name] = v
+                model.load_state_dict(new_state_dict, strict=False)
+            else:
+                model.load_state_dict(checkpoint['state_dict'], strict=False)
+
             args.start_epoch = checkpoint['epoch'] + 1
             optimizer.load_state_dict(checkpoint['optimizer'])
             log.info("=> loaded checkpoint '{}' (epoch {})"
@@ -150,7 +170,7 @@ def train(dataloader, model, optimizer, log, epoch=0):
     model.train()
 
     for batch_idx, (imgL, imgR, disp_L) in enumerate(dataloader):
-        imgL = imgL.float().cuda(div)
+        imgL = imgL.float().cuda()
         imgR = imgR.float().cuda()
         disp_L = disp_L.float().cuda()
 

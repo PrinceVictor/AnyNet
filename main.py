@@ -10,7 +10,7 @@ import time
 from dataloader import listflowfile as lt
 from dataloader import SecenFlowLoader as DA
 import utils.logger as logger
-
+from collections import OrderedDict
 import models.anynet
 
 parser = argparse.ArgumentParser(description='AnyNet with Flyingthings3d')
@@ -42,7 +42,7 @@ parser.add_argument('--channels_3d', type=int, default=4, help='number of initia
 parser.add_argument('--layers_3d', type=int, default=4, help='number of initial layers of the 3d network')
 parser.add_argument('--growth_rate', type=int, nargs='+', default=[4,1,1], help='growth rate in the 3d network')
 parser.add_argument('--spn_init_channels', type=int, default=8, help='initial channels for spnet')
-
+parser.add_argument('--data_parallel', action='store_true')
 
 args = parser.parse_args()
 
@@ -68,7 +68,8 @@ def main():
         log.info(str(key) + ': ' + str(value))
 
     model = models.anynet.AnyNet(args)
-    model = nn.DataParallel(model).cuda()
+    # model = nn.DataParallel(model).cuda()
+    model = model.cuda()
     optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999))
     log.info('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
 
@@ -78,7 +79,16 @@ def main():
             log.info("=> loading checkpoint '{}'".format(args.resume))
             checkpoint = torch.load(args.resume)
             args.start_epoch = checkpoint['epoch']+1
-            model.load_state_dict(checkpoint['state_dict'], strict=False)
+
+            if args.data_parallel == False:
+                new_state_dict = OrderedDict()
+                for k, v in checkpoint['state_dict'].items():
+                    name = k[7:]
+                    new_state_dict[name] = v
+                model.load_state_dict(new_state_dict, strict=False)
+            else:
+                model.load_state_dict(checkpoint['state_dict'], strict=False)
+
             optimizer.load_state_dict(checkpoint['optimizer'])
             log.info("=> loaded checkpoint '{}' (epoch {})"
                      .format(args.resume, checkpoint['epoch']))
@@ -94,14 +104,14 @@ def main():
 
         train(TrainImgLoader, model, optimizer, log, epoch)
 
-        test(TestImgLoader, model, log)
-
         savefilename = args.save_path + '/checkpoint.tar'
         torch.save({
             'epoch': epoch,
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
         }, savefilename)
+
+        test(TestImgLoader, model, log)
 
     log.info('full training time = {:.2f} Hours'.format((time.time() - start_full_time) / 3600))
 
