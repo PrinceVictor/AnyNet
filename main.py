@@ -25,7 +25,7 @@ parser.add_argument('--start_epoch', type=int, default=0,
                     help='number of epochs to train')
 parser.add_argument('--train_bsize', type=int, default=12,
                     help='batch size for training (default: 12)')
-parser.add_argument('--test_bsize', type=int, default=8,
+parser.add_argument('--test_bsize', type=int, default=24    ,
                     help='batch size for testing (default: 8)')
 parser.add_argument('--save_path', type=str, default='results/pretrained_anynet',
                     help='the path of saving checkpoints and log')
@@ -99,6 +99,8 @@ def main():
         log.info('Not Resume')
 
     start_full_time = time.time()
+    # test(TestImgLoader, model, log)
+
     for epoch in range(args.start_epoch, args.epochs):
         log.info('This is {}-th epoch'.format(epoch))
 
@@ -142,25 +144,25 @@ def train(dataloader, model, optimizer, log, epoch=0):
         sum(loss).backward()
         optimizer.step()
 
-        # for x in range(stages):
-        #     if len(disp_L[mask]) == 0:
-        #         EPEs[x].update(0)
-        #         continue
-        #     output = torch.squeeze(outputs[x], 1)
-        #     output = output[:, 4:, :]
-        #     EPEs[x].update((output[mask] - disp_L[mask]).abs().mean())
-        #     info_str = '\t'.join(
-        #         ['Stage {} = {:.2f}({:.2f})'.format(x, EPEs[x].val, EPEs[x].avg) for x in range(stages)])
-
         for idx in range(stages):
             losses[idx].update(loss[idx].item()/args.loss_weights[idx])
 
+            if len(disp_L[mask]) == 0:
+                EPEs[idx].update(0)
+                continue
+            with torch.no_grad():
+                output = torch.squeeze(outputs[idx], 1)
+                # output = output[:, 4:, :]
+                EPEs[idx].update((output[mask] - disp_L[mask]).abs().mean())
+
         if batch_idx % args.print_freq:
-            info_str = ['Stage {} = {:.2f}({:.2f})'.format(x, losses[x].val, losses[x].avg) for x in range(stages)]
+            # info_str = ['Stage {} = {:.2f}({:.2f})'.format(x, losses[x].val, losses[x].avg) for x in range(stages)]
+            info_str = ['Stage{} EPE:{:<5.2f} loss:{:<5.2f}'.format(x, EPEs[x].avg, losses[x].avg) for x in range(stages)]
             info_str = '\t'.join(info_str)
 
-            for x in range(stages):
-                losses[x].reset()
+            # for x in range(stages):
+                # losses[x].reset()
+                # EPEs[x].reset()
 
             log.info('Epoch{} [{}/{}] {}'.format(
                 epoch, batch_idx, length_loader, info_str))
